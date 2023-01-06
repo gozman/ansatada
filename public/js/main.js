@@ -14,10 +14,10 @@ $(document).ready(() => {
         $(this).html(replaced_text);
     });
 
-    $(':input[type="submit"]').prop('disabled', true);
-    $('input[type="text"]').keyup(function() {
+    $('#luck').prop('disabled', true);
+    $('#q').keyup(function() {
        if($(this).val() != '') {
-          $(':input[type="submit"]').prop('disabled', false);
+          $('#q').prop('disabled', false);
        }
     });
 
