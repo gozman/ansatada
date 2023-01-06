@@ -255,3 +255,7 @@ const driveSearch = async (req) => {
         });
     }
   };
+
+  exports.getSearch = (req, res) => {
+    res.render('home');
+  }

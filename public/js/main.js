@@ -14,17 +14,9 @@ $(document).ready(() => {
         $(this).html(replaced_text);
     });
 
-    $('#luck').prop('disabled', true);
-    $('#q').keyup(function() {
-       if($(this).val() != '') {
-          $('#q').prop('disabled', false);
-       }
-    });
-
     $('form').submit(function() {
       $("#luck").text("Doing some GPT magic...");
       $("#luck").attr("disabled", true);
-      $('input[type="text"]').attr("disabled", true);
     });
 });
 });
