@@ -59,14 +59,15 @@ const fetchAndSnip = async (drive, fileId, query, maxSnippets) => {
 }
 
 const gptInterpret = async (knowledge, messages, query) => {
-    const promptIntro = "You are reading snippets of documents on an intranet and Slack messages that are written by employees of Ada, a company that develops chatbot software for automating customer service inquiries. Snippets of documents from the intranet are preceded by --KNOWLEDGE and messages from Slack are preceded by --MESSAGE";
-    const promptOutro = "Given this informatio , please answer the question \"" + query +"\"\n\n";
+    const promptIntro = "You are reading Slack messages that are written by employees of Ada, a company that develops chatbot software for automating customer service inquiries. Messages from Slack are preceded by --MESSAGE and the link to the original message is preceded by --PERMALINK";
+    const promptOutro = "Given this information, please answer the question \"" + query +"\". At the end of the answer, provide the URL specified in the --PERMALINK field of the message you computed the answer from\n\n";
 
     const promptSetupLength = promptIntro.length + promptOutro.length;
 
     var promptKnowledge = "\n\n";
     messages.every((snippet) => {
-        if(promptSetupLength + promptKnowledge.length + snippet.length + 2 > 4000) {
+        const newLength = promptSetupLength + promptKnowledge.length + snippet.length + 2
+        if(newLength > 8000) {
             return false;
         }        
         promptKnowledge += snippet + "\n\n";
@@ -74,12 +75,17 @@ const gptInterpret = async (knowledge, messages, query) => {
     })
 
     knowledge.every((snippet) => {
-        if(promptSetupLength + promptKnowledge.length + snippet.length + 2 > 4000) {
+        if(promptSetupLength + promptKnowledge.length + snippet.length + 2 > 8000) {
             return false;
         }
         promptKnowledge += snippet + "\n\n";
         return true;
     });
+
+    if(promptKnowledge == "\n\n") {
+        console.log("Couldn't find an answer");
+        return "Couldn't find an answer."
+    }
 
     const thePrompt = promptIntro + promptKnowledge + promptOutro;
     console.log(thePrompt);
@@ -151,7 +157,7 @@ const slackSearch = async (req) => {
     const web = new WebClient(token.accessToken);
 
     try{
-        const query = await gptQuestionToQuery(req.query.q, true);
+        const query = await gptQuestionToQuery(req.body.q, true);
 
         // Call the search.messages method using the WebClient
         const result = await web.search.messages({query});
@@ -160,7 +166,7 @@ const slackSearch = async (req) => {
         var messages = [];
         if(result.messages.matches.length) {
             for(var i=0; i<result.messages.matches.length && i<5; i++) {
-                messages.push("--MESSAGE: " + result.messages.matches[i].text);
+                messages.push("--MESSAGE: " + result.messages.matches[i].text + "--PERMALINK: " + result.messages.matches[i].permalink);
             }
         }
 
@@ -191,7 +197,7 @@ const driveSearch = async (req) => {
      var filtFiles = [];     
     
     try {
-         const query = await gptQuestionToQuery(req.query.q);
+         const query = await gptQuestionToQuery(req.body.q);
          const driveQuery = "fullText contains '" + query + "'";
          const fields = "nextPageToken, files(id, name, mimeType)"; 
          const response = await drive.files.list({q: driveQuery, spaces: 'drive'});
@@ -223,7 +229,7 @@ const driveSearch = async (req) => {
     }
   };
 
-  exports.getSearch = async (req, res) => {
+  exports.postSearch = async (req, res) => {
     var slackMessages = [];
     var driveSnippets = [];
 
@@ -231,17 +237,21 @@ const driveSearch = async (req) => {
         var slackMessages = await slackSearch(req);
     }
     
+    /*
     if(req.user.google) {
         var driveSnippets = await driveSearch(req);
-    }
+    }*/
 
     try {
-        const answer = await gptInterpret(driveSnippets, slackMessages, req.query.q);
-        res.status(200).send(answer);
+        const answer = await gptInterpret(driveSnippets, slackMessages, req.body.q);
+        res.render('home', {
+            result: answer
+        });
     } catch(err) {
         console.log("Error:");
         console.log(err);        
-        res.status(500).send(err);
+        res.render('home', {
+            result: err
+        });
     }
   };
-  

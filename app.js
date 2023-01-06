@@ -145,7 +145,7 @@ app.get('/api', apiController.getApi);
 /**
  * Search routes
  */
-app.get('/search', searchController.getSearch);
+app.post('/search', searchController.postSearch);
 
 /**
  * OAuth authentication routes. (Sign in)
