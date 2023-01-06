@@ -159,7 +159,7 @@ app.get('/auth/slack', passport.authorize('slack', {
   user_scope:  ["channels:history","channels:read","files:read","groups:history","groups:read","im:history","im:read","links:read","mpim:history","mpim:read","reactions:read","search:read"] //"identity.basic","identity.email","identity.avatar","identity.team"]
 }));
 app.get('/auth/slack/callback', passport.authenticate('slack', { failureRedirect: '/login' }),
-  (req, res) => res.redirect(req.session.returnTo || '/') // Successful authentication, redirect home.
+  (req, res) => res.redirect('/') // Successful authentication, redirect home.
 );
 
 /**
